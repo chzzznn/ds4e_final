@@ -7,6 +7,7 @@ from plotly.subplots import make_subplots
 import matplotlib.pyplot as plt
 import seaborn as sns
 import warnings
+from sklearn.impute import SimpleImputer
 warnings.filterwarnings("ignore")
 
 # ─────────────────────────────────────────────
