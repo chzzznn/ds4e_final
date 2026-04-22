@@ -12,6 +12,38 @@ warnings.filterwarnings("ignore")
 # ─────────────────────────────────────────────
 # DATA LOADING & PREPROCESSING
 # ─────────────────────────────────────────────
+
+DATASETS = {
+    "Global Education": "Global_Education.csv",
+    # Add more datasets here if needed
+}
+
+DATASET_DESCRIPTIONS = {
+    "Global Education": {
+        "title": "Global Education Indicators",
+        "problem": "How do education indicators predict unemployment rates across different countries?",
+        "target": "Unemployment_Rate",
+        "target_desc": "The unemployment rate (%) for each country, which we aim to predict based on education indicators.",
+        "source": "UNESCO Institute for Statistics (UIS) and World Bank",
+        "rows": 202,
+        "features_desc": {
+            "Completion_Rate_Primary_Male": "The percentage of male students who complete primary education in each country", 
+            "Completion_Rate_Primary_Female": "The percentage of female students who complete primary education in each country",
+            "Completion_Rate_Lower_Secondary_Male": "The percentage of male students who complete lower secondary education in each country",
+            "Completion_Rate_Lower_Secondary_Female": "The percentage of female students who complete lower secondary education in each country",
+            "Completion_Rate_Upper_Secondary_Male": "The percentage of male students who complete upper secondary education in each country",
+            "Completion_Rate_Upper_Secondary_Female": "The percentage of female students who complete upper secondary education in each country",
+            "Youth_15_24_Literacy_Rate_Male": "The percentage of male youth (15-24) who are literate in each country",
+            "Youth_15_24_Literacy_Rate_Female": "The percentage of female youth (15-24) who are literate in each country",
+            "Birth_Rate": "The number of births per 1,000 people in each country",
+            "Gross_Primary_Education_Enrollment": "The gross enrollment ratio for primary education in each country",
+            "Gross_Tertiary_Education_Enrollment": "The gross enrollment ratio for tertiary education in each country",
+            "Lower_Secondary_End_Proficiency_Reading": "The proficiency level in reading at the end of lower secondary education in each country",
+            "Lower_Secondary_End_Proficiency_Math": "The proficiency level in math at the end of lower secondary education in each country"
+        }
+    }
+}   # Add descriptions for new datasets here
+
 @st.cache_data
 def load_data():
     df = pd.read_csv("Global_Education.csv", encoding="latin1")
