@@ -431,34 +431,43 @@ elif "Visualization" in page:
     """, unsafe_allow_html=True)
 
         # ─────────────────────────────────────────────
-    # EXTRA VISUALIZATION 2: Boxplot of unemployment distribution
+    # EXTRA VISUALIZATION 3: Pairwise education relationships
     # ─────────────────────────────────────────────
-    st.markdown("<div class='section-title' style='margin-top:24px;'>📦 Unemployment Rate Spread & Outliers</div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title' style='margin-top:24px;'>🎓 Education Indicators Pairwise View</div>", unsafe_allow_html=True)
 
-    fig_box = px.box(
-        df_viz.dropna(subset=["Unemployment_Rate"]),
-        y="Unemployment_Rate",
-        points="all",
+    pair_cols = [
+        "Unemployment_Rate",
+        "Birth_Rate",
+        "Gross_Primary_Education_Enrollment",
+        "Gross_Tertiary_Education_Enrollment"
+    ]
+
+    pair_cols = [c for c in pair_cols if c in df_viz.columns]
+    pair_df = df_viz[pair_cols + ["Countries and areas"]].replace(0, np.nan).dropna()
+
+    fig_pair = px.scatter_matrix(
+        pair_df,
+        dimensions=pair_cols,
+        color="Unemployment_Rate",
         hover_name="Countries and areas",
-        title="Distribution of Unemployment Rates Across Countries",
-        labels={"Unemployment_Rate": "Unemployment Rate (%)"}
+        title="Pairwise Relationships Between Key Education and Labor Indicators",
+        color_continuous_scale=["#7C9EFF", "#FFD700", "#FF6B6B"]
     )
 
-    fig_box.update_layout(
-        height=380,
+    fig_pair.update_layout(
+        height=650,
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(13,15,26,0.8)",
         font=dict(color="#9090B0"),
-        yaxis=dict(gridcolor="#1E2140"),
-        margin=dict(t=40)
+        margin=dict(t=50)
     )
 
-    st.plotly_chart(fig_box, use_container_width=True)
+    st.plotly_chart(fig_pair, use_container_width=True)
 
     st.markdown("""
     <div class='insight-box'>
-    💡 The boxplot shows the overall spread of unemployment rates and highlights outlier countries.
-    This is useful because unemployment is not evenly distributed globally.
+    💡 This matrix helps us see several relationships at once. It is useful for spotting whether unemployment
+    moves more closely with birth rate, primary enrollment, or tertiary enrollment.
     </div>
     """, unsafe_allow_html=True)
 # ═══════════════════════════════════════════════════════════
