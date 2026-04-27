@@ -290,450 +290,107 @@ if "Overview" in page:
 # ═══════════════════════════════════════════════════════════
 elif "Visualization" in page:
     st.markdown("<div class='hero-title' style='font-size:2.2rem; color:#E8E8F0;'>📊 Data <span style='color:#7C9EFF;'>Visualization</span></div>", unsafe_allow_html=True)
-    st.markdown("<div class='section-sub'>Exploratory analysis, feature deep-dives, and model performance diagnostics</div>", unsafe_allow_html=True)
- 
-    # ── shared setup ──────────────────────────────────────────────────────────
+    st.markdown("<div class='section-sub'>Exploratory analysis revealing key patterns in global education & unemployment</div>", unsafe_allow_html=True)
+
     df_viz = df.copy()
-    num_cols = df_viz.select_dtypes(include=np.number).columns.tolist()
-    for col in num_cols:
-        df_viz[col] = df_viz[col].replace(0, np.nan)
- 
-    PLOT_BG  = "rgba(13,15,26,0.8)"
-    PAPER_BG = "rgba(0,0,0,0)"
-    GRID     = "#1E2140"
-    FONT     = dict(color="#9090B0")
-    BLUE, RED, GREEN, PINK = "#7C9EFF", "#FF6B6B", "#64C8A0", "#FF6B9D"
- 
-    def base_layout(height=340, margin=None):
-        m = margin or dict(t=20, b=20, l=0, r=0)
-        return dict(paper_bgcolor=PAPER_BG, plot_bgcolor=PLOT_BG,
-                    font=FONT, height=height, margin=m,
-                    xaxis=dict(gridcolor=GRID), yaxis=dict(gridcolor=GRID),
-                    legend=dict(bgcolor="rgba(0,0,0,0)"))
- 
-    # ── tab navigation ────────────────────────────────────────────────────────
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "🌍  EDA & Distributions",
-        "🔗  Feature Relationships",
-        "⚖️  Deep Dives",
-        "🤖  Model Diagnostics",
-    ])
- 
-    # ══════════════════════════════════════════════════════
-    # TAB 1 — EDA & DISTRIBUTIONS
-    # ══════════════════════════════════════════════════════
-    with tab1:
- 
-        # World map
-        st.markdown("<div class='section-title'>🌍 Unemployment Rate by Country</div>", unsafe_allow_html=True)
-        fig_map = px.choropleth(
-            df_viz.dropna(subset=["Unemployment_Rate"]),
-            locations="Countries and areas", locationmode="country names",
-            color="Unemployment_Rate",
-            color_continuous_scale=["#1A1D35", "#3050A0", BLUE, "#FFD700", RED],
-            labels={"Unemployment_Rate": "Unemployment (%)"},
-        )
-        fig_map.update_layout(
-            paper_bgcolor=PAPER_BG, plot_bgcolor=PAPER_BG,
-            geo=dict(bgcolor=PAPER_BG, showframe=False, showcoastlines=True,
-                     coastlinecolor="#2A2D4A", showland=True, landcolor="#13162B",
-                     showocean=True, oceancolor="#0D0F1A"),
-            font=FONT, coloraxis_colorbar=dict(tickfont=dict(color="#9090B0")),
-            height=420, margin=dict(l=0, r=0, t=0, b=0)
-        )
-        st.plotly_chart(fig_map, use_container_width=True)
- 
-        # Top & Bottom 10
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🏆 Top & Bottom 10 Countries by Unemployment</div>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        df_ranked = df_viz.dropna(subset=["Unemployment_Rate"])
-        with col1:
-            top10 = df_ranked.nlargest(10, "Unemployment_Rate")
-            fig_top = px.bar(top10, x="Unemployment_Rate", y="Countries and areas",
-                             orientation="h", color="Unemployment_Rate",
-                             color_continuous_scale=[BLUE, RED],
-                             title="Highest Unemployment")
-            fig_top.update_layout(**base_layout(320))
-            fig_top.update_layout(title_font=dict(color="#C0C0D8"))
-            st.plotly_chart(fig_top, use_container_width=True)
-        with col2:
-            bot10 = df_ranked.nsmallest(10, "Unemployment_Rate")
-            fig_bot = px.bar(bot10, x="Unemployment_Rate", y="Countries and areas",
-                             orientation="h", color="Unemployment_Rate",
-                             color_continuous_scale=[GREEN, BLUE],
-                             title="Lowest Unemployment")
-            fig_bot.update_layout(**base_layout(320))
-            fig_bot.update_layout(title_font=dict(color="#C0C0D8"))
-            st.plotly_chart(fig_bot, use_container_width=True)
- 
-        # Distribution + Box side by side
-        st.markdown("<div class='section-title' style='margin-top:20px;'>📈 Unemployment Distribution</div>", unsafe_allow_html=True)
-        col3, col4 = st.columns(2)
-        with col3:
-            fig_hist = px.histogram(df_ranked, x="Unemployment_Rate", nbins=30,
-                                    color_discrete_sequence=[BLUE], marginal="rug",
-                                    labels={"Unemployment_Rate": "Unemployment (%)"})
-            fig_hist.update_layout(**base_layout(300))
-            st.plotly_chart(fig_hist, use_container_width=True)
-            st.markdown("<div class='insight-box'>💡 Distribution is <b>right-skewed</b> — most countries cluster below 10%, but a tail of high-unemployment nations pulls the mean up.</div>", unsafe_allow_html=True)
-        with col4:
-            fig_box = px.box(df_ranked, y="Unemployment_Rate",
-                             color_discrete_sequence=[BLUE],
-                             labels={"Unemployment_Rate": "Unemployment (%)"},
-                             points="all")
-            fig_box.update_layout(**base_layout(300))
-            fig_box.update_traces(marker=dict(color=BLUE, opacity=0.5, size=4))
-            st.plotly_chart(fig_box, use_container_width=True)
-            st.markdown("<div class='insight-box'>💡 The box plot reveals several <b>outliers above 20%</b> — countries like South Africa and Djibouti that sit far above the global median.</div>", unsafe_allow_html=True)
- 
-        # Missing data heatmap
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🔍 Data Coverage by Feature</div>", unsafe_allow_html=True)
-        key_cols = [
-            "Unemployment_Rate", "Birth_Rate",
-            "Gross_Primary_Education_Enrollment", "Gross_Tertiary_Education_Enrollment",
-            "Completion_Rate_Primary_Male", "Completion_Rate_Primary_Female",
-            "Completion_Rate_Upper_Secondary_Male", "Completion_Rate_Upper_Secondary_Female",
-            "Youth_15_24_Literacy_Rate_Male", "Youth_15_24_Literacy_Rate_Female",
-            "Lower_Secondary_End_Proficiency_Reading", "Lower_Secondary_End_Proficiency_Math",
-        ]
-        key_cols = [c for c in key_cols if c in df_viz.columns]
-        coverage = (df_viz[key_cols].notna().mean() * 100).sort_values()
-        colors_cov = [RED if v < 50 else "#FFB400" if v < 70 else GREEN for v in coverage.values]
-        fig_cov = go.Figure(go.Bar(
-            x=coverage.values, y=coverage.index, orientation="h",
-            marker_color=colors_cov,
-            text=[f"{v:.0f}%" for v in coverage.values],
-            textposition="outside", textfont=dict(color="#9090B0", size=11),
-        ))
-        fig_cov.update_layout(**base_layout(400))
-        fig_cov.update_layout(xaxis=dict(range=[0, 115], title="% countries with data", gridcolor=GRID))
-        st.plotly_chart(fig_cov, use_container_width=True)
-        st.markdown("<div class='insight-box'>💡 <span style='color:#FF6B6B;'>Red = &lt;50% coverage</span> — features in red were excluded from the model to avoid imputation noise masking real signal.</div>", unsafe_allow_html=True)
- 
-    # ══════════════════════════════════════════════════════
-    # TAB 2 — FEATURE RELATIONSHIPS
-    # ══════════════════════════════════════════════════════
-    with tab2:
- 
-        # Scatter: Tertiary + Birth Rate
-        st.markdown("<div class='section-title'>🔗 Education Indicators vs. Unemployment</div>", unsafe_allow_html=True)
-        col1, col2 = st.columns(2)
-        with col1:
-            if "Gross_Tertiary_Education_Enrollment" in df_viz.columns:
-                df_s = df_viz.dropna(subset=["Unemployment_Rate", "Gross_Tertiary_Education_Enrollment"])
-                fig = px.scatter(df_s, x="Gross_Tertiary_Education_Enrollment", y="Unemployment_Rate",
-                                 hover_name="Countries and areas", trendline="ols",
-                                 color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
-                                 labels={"Gross_Tertiary_Education_Enrollment": "Tertiary Enrollment (%)", "Unemployment_Rate": "Unemployment (%)"},
-                                 title="Tertiary Enrollment vs Unemployment")
-                fig.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
-                st.plotly_chart(fig, use_container_width=True)
-                st.markdown("<div class='insight-box'>💡 Negative trend — more university access means fewer unemployed.</div>", unsafe_allow_html=True)
-        with col2:
-            if "Birth_Rate" in df_viz.columns:
-                df_s2 = df_viz.dropna(subset=["Unemployment_Rate", "Birth_Rate"])
-                fig2 = px.scatter(df_s2, x="Birth_Rate", y="Unemployment_Rate",
-                                  hover_name="Countries and areas", trendline="ols",
-                                  color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
-                                  labels={"Birth_Rate": "Birth Rate", "Unemployment_Rate": "Unemployment (%)"},
-                                  title="Birth Rate vs Unemployment")
-                fig2.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
-                st.plotly_chart(fig2, use_container_width=True)
-                st.markdown("<div class='insight-box'>💡 Positive trend — high birth rates proxy lower development & weaker education investment.</div>", unsafe_allow_html=True)
- 
-        # Scatter: Primary enrollment + OOSR upper secondary
-        col3, col4 = st.columns(2)
-        with col3:
-            if "Gross_Primary_Education_Enrollment" in df_viz.columns:
-                df_s3 = df_viz.dropna(subset=["Unemployment_Rate", "Gross_Primary_Education_Enrollment"])
-                fig3 = px.scatter(df_s3, x="Gross_Primary_Education_Enrollment", y="Unemployment_Rate",
-                                  hover_name="Countries and areas", trendline="ols",
-                                  color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
-                                  labels={"Gross_Primary_Education_Enrollment": "Primary Enrollment (%)", "Unemployment_Rate": "Unemployment (%)"},
-                                  title="Primary Enrollment vs Unemployment")
-                fig3.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
-                st.plotly_chart(fig3, use_container_width=True)
-                st.markdown("<div class='insight-box'>💡 Weak signal at primary level — nearly every country has high primary enrollment, so it doesn't differentiate unemployment outcomes.</div>", unsafe_allow_html=True)
-        with col4:
-            oosr_col = next((c for c in ["OOSR_Upper_Secondary_Age_Male", "OOSR_Upper_Secondary_Age_Female"] if c in df_viz.columns), None)
-            if oosr_col:
-                df_s4 = df_viz.dropna(subset=["Unemployment_Rate", oosr_col])
-                fig4 = px.scatter(df_s4, x=oosr_col, y="Unemployment_Rate",
-                                  hover_name="Countries and areas", trendline="ols",
-                                  color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
-                                  labels={oosr_col: "Out-of-School Rate Upper Secondary (%)", "Unemployment_Rate": "Unemployment (%)"},
-                                  title="OOSR Upper Secondary vs Unemployment")
-                fig4.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
-                st.plotly_chart(fig4, use_container_width=True)
-                st.markdown("<div class='insight-box'>💡 Strong positive signal — countries where more teens drop out of secondary school show systematically higher unemployment.</div>", unsafe_allow_html=True)
- 
-        # Correlation heatmap
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🧮 Correlation Heatmap</div>", unsafe_allow_html=True)
-        corr_candidates = [
-            "Unemployment_Rate", "Birth_Rate",
-            "Gross_Primary_Education_Enrollment", "Gross_Tertiary_Education_Enrollment",
-            "OOSR_Primary_Age_Male", "OOSR_Primary_Age_Female",
-            "OOSR_Upper_Secondary_Age_Male", "OOSR_Upper_Secondary_Age_Female",
-            "Completion_Rate_Primary_Male", "Completion_Rate_Upper_Secondary_Female",
-        ]
-        corr_cols = [c for c in corr_candidates if c in df_viz.columns]
-        corr_df = df_viz[corr_cols].dropna()
-        if len(corr_df) > 5:
-            fig_corr, ax = plt.subplots(figsize=(10, 7))
-            fig_corr.patch.set_facecolor("#0D0F1A")
-            ax.set_facecolor("#13162B")
-            sns.heatmap(corr_df.corr(), annot=True, fmt=".2f", cmap="RdYlBu_r", ax=ax,
-                        linewidths=0.5, linecolor="#1E2140",
-                        annot_kws={"size": 8, "color": "white"}, cbar_kws={"shrink": 0.8})
-            ax.tick_params(colors="#8888AA", labelsize=8)
-            plt.xticks(rotation=45, ha="right")
-            st.pyplot(fig_corr, use_container_width=True)
-            plt.close()
- 
-        # Parallel coordinates
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🔀 Parallel Coordinates — Multi-Feature View</div>", unsafe_allow_html=True)
-        pc_cols = [c for c in ["Unemployment_Rate", "Birth_Rate",
-                                "Gross_Tertiary_Education_Enrollment",
-                                "OOSR_Upper_Secondary_Age_Male",
-                                "OOSR_Upper_Secondary_Age_Female"] if c in df_viz.columns]
-        df_pc = df_viz[pc_cols + ["Countries and areas"]].dropna()
-        if len(df_pc) > 10:
-            fig_pc = px.parallel_coordinates(
-                df_pc, color="Unemployment_Rate",
-                color_continuous_scale=["#1A1D35", BLUE, "#FFD700", RED],
-                labels={c: c.replace("_", " ").replace("OOSR ", "OOSR\n") for c in pc_cols},
-            )
-            fig_pc.update_layout(paper_bgcolor=PAPER_BG, plot_bgcolor=PAPER_BG,
-                                 font=FONT, height=380, margin=dict(t=30, b=30, l=80, r=80))
-            st.plotly_chart(fig_pc, use_container_width=True)
-            st.markdown("<div class='insight-box'>💡 Each line is a country. Lines that cross from high OOSR to high unemployment confirm the relationship — drag the axes to filter interactively.</div>", unsafe_allow_html=True)
- 
-    # ══════════════════════════════════════════════════════
-    # TAB 3 — DEEP DIVES
-    # ══════════════════════════════════════════════════════
-    with tab3:
- 
-        # Gender gap
-        st.markdown("<div class='section-title'>⚖️ Gender Gap in Education Completion</div>", unsafe_allow_html=True)
-        gc_m = "Completion_Rate_Upper_Secondary_Male"
-        gc_f = "Completion_Rate_Upper_Secondary_Female"
-        if gc_m in df_viz.columns and gc_f in df_viz.columns:
-            df_gap = df_viz.dropna(subset=[gc_m, gc_f]).copy()
-            df_gap["gap"] = df_gap[gc_m] - df_gap[gc_f]
-            top_gap = df_gap.nlargest(20, "gap")
-            fig_gap = go.Figure()
-            fig_gap.add_trace(go.Bar(name="Male", x=top_gap["Countries and areas"],
-                                     y=top_gap[gc_m], marker_color=BLUE))
-            fig_gap.add_trace(go.Bar(name="Female", x=top_gap["Countries and areas"],
-                                     y=top_gap[gc_f], marker_color=PINK))
-            fig_gap.update_layout(**base_layout(380), barmode="group",
-                                  margin=dict(b=120, t=10, l=0, r=0))
-            fig_gap.update_xaxes(tickangle=-45)
-            fig_gap.update_yaxes(title="Upper Secondary Completion (%)")
-            st.plotly_chart(fig_gap, use_container_width=True)
-            st.markdown("<div class='insight-box'>💡 In Chad, Niger, and Mali, male completion rates are <b>10–20 percentage points higher</b> than female — a gender equity gap that compounds into higher unemployment for women.</div>", unsafe_allow_html=True)
- 
-        # Violin: unemployment by birth rate quartile
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🎻 Unemployment by Birth Rate Group</div>", unsafe_allow_html=True)
+    for col in ["Unemployment_Rate", "Gross_Tertiary_Education_Enrollment", "Birth_Rate"]:
+        if col in df_viz.columns:
+            df_viz[col] = df_viz[col].replace(0, np.nan)
+
+    st.markdown("<div class='section-title'>🌍 Unemployment Rate by Country</div>", unsafe_allow_html=True)
+    fig_map = px.choropleth(
+        df_viz.dropna(subset=["Unemployment_Rate"]),
+        locations="Countries and areas", locationmode="country names",
+        color="Unemployment_Rate",
+        color_continuous_scale=["#1A1D35", "#3050A0", "#7C9EFF", "#FFD700", "#FF6B6B"],
+        labels={"Unemployment_Rate": "Unemployment (%)"},
+    )
+    fig_map.update_layout(
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        geo=dict(bgcolor="rgba(0,0,0,0)", showframe=False, showcoastlines=True,
+                 coastlinecolor="#2A2D4A", showland=True, landcolor="#13162B",
+                 showocean=True, oceancolor="#0D0F1A"),
+        font=dict(color="#9090B0"),
+        coloraxis_colorbar=dict(tickfont=dict(color="#9090B0")),
+        height=420, margin=dict(l=0, r=0, t=0, b=0)
+    )
+    st.plotly_chart(fig_map, use_container_width=True)
+
+    st.markdown("<div class='section-title' style='margin-top:16px;'>🔗 Education vs. Unemployment</div>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2)
+    with col1:
+        if "Gross_Tertiary_Education_Enrollment" in df_viz.columns:
+            df_s1 = df_viz.dropna(subset=["Unemployment_Rate", "Gross_Tertiary_Education_Enrollment"])
+            fig1 = px.scatter(df_s1, x="Gross_Tertiary_Education_Enrollment", y="Unemployment_Rate",
+                              hover_name="Countries and areas", trendline="ols",
+                              color="Unemployment_Rate", color_continuous_scale=["#4466FF", "#FF6B6B"],
+                              labels={"Gross_Tertiary_Education_Enrollment": "Tertiary Enrollment (%)", "Unemployment_Rate": "Unemployment (%)"},
+                              title="Tertiary Enrollment vs Unemployment")
+            fig1.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(13,15,26,0.8)",
+                               font=dict(color="#9090B0"), height=340,
+                               xaxis=dict(gridcolor="#1E2140"), yaxis=dict(gridcolor="#1E2140"),
+                               title_font=dict(color="#C0C0D8"))
+            st.plotly_chart(fig1, use_container_width=True)
+            st.markdown("<div class='insight-box'>💡 Countries with higher tertiary enrollment tend to show <b>lower unemployment</b>.</div>", unsafe_allow_html=True)
+    with col2:
         if "Birth_Rate" in df_viz.columns:
-            df_vio = df_viz.dropna(subset=["Unemployment_Rate", "Birth_Rate"]).copy()
-            df_vio["Birth Rate Group"] = pd.qcut(
-                df_vio["Birth_Rate"], q=4,
-                labels=["Low\n(≤Q1)", "Mid-Low\n(Q1–Q2)", "Mid-High\n(Q2–Q3)", "High\n(>Q3)"]
-            )
-            fig_vio = px.violin(df_vio, x="Birth Rate Group", y="Unemployment_Rate",
-                                color="Birth Rate Group", box=True, points="all",
-                                color_discrete_sequence=[GREEN, BLUE, "#FFB400", RED],
-                                labels={"Unemployment_Rate": "Unemployment (%)"})
-            fig_vio.update_layout(**base_layout(380))
-            fig_vio.update_traces(meanline_visible=True)
-            st.plotly_chart(fig_vio, use_container_width=True)
-            st.markdown("<div class='insight-box'>💡 Countries in the highest birth rate quartile have a median unemployment nearly <b>3× higher</b> than low-birth-rate countries — and far more spread, showing other compounding factors at play.</div>", unsafe_allow_html=True)
- 
-        # Scatter matrix
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🔲 Scatter Matrix — Key Features</div>", unsafe_allow_html=True)
-        sm_candidates = ["Unemployment_Rate", "Birth_Rate",
-                         "Gross_Tertiary_Education_Enrollment",
-                         "OOSR_Upper_Secondary_Age_Male", "OOSR_Primary_Age_Female"]
-        sm_cols = [c for c in sm_candidates if c in df_viz.columns]
-        df_sm = df_viz[sm_cols].dropna()
-        if len(df_sm) > 10 and len(sm_cols) >= 3:
-            fig_sm = px.scatter_matrix(
-                df_sm, dimensions=sm_cols,
-                color=df_sm["Unemployment_Rate"],
-                color_continuous_scale=["#1A1D35", BLUE, "#FFD700", RED],
-                labels={c: c.replace("_", " ")[:22] for c in sm_cols},
-            )
-            fig_sm.update_traces(diagonal_visible=False, marker=dict(size=3, opacity=0.6))
-            fig_sm.update_layout(paper_bgcolor=PAPER_BG, plot_bgcolor=PLOT_BG,
-                                 font=FONT, height=520,
-                                 margin=dict(t=20, b=20, l=20, r=20))
-            st.plotly_chart(fig_sm, use_container_width=True)
-            st.markdown("<div class='insight-box'>💡 Each cell shows the relationship between two features. Strong diagonal patterns (upper-left to lower-right) indicate useful predictors. Look for the birth rate and OOSR columns — they show the clearest relationship with unemployment (color intensity).</div>", unsafe_allow_html=True)
- 
-        # Outlier analysis — Z-score
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🚨 Outlier Analysis — Unemployment Z-Scores</div>", unsafe_allow_html=True)
-        df_out = df_viz.dropna(subset=["Unemployment_Rate"]).copy()
-        df_out["z_score"] = ((df_out["Unemployment_Rate"] - df_out["Unemployment_Rate"].mean())
-                             / df_out["Unemployment_Rate"].std())
-        df_out["outlier"] = df_out["z_score"].abs() > 2
-        fig_z = px.scatter(
-            df_out.sort_values("z_score"),
-            x="Countries and areas", y="z_score",
-            color="outlier",
-            color_discrete_map={True: RED, False: BLUE},
-            hover_data={"Unemployment_Rate": True, "z_score": ":.2f"},
-            labels={"z_score": "Z-Score", "outlier": "Outlier (|z|>2)"},
-        )
-        fig_z.add_hline(y=2,  line_dash="dash", line_color="#FFB400", opacity=0.6)
-        fig_z.add_hline(y=-2, line_dash="dash", line_color="#FFB400", opacity=0.6)
-        fig_z.update_layout(**base_layout(380))
-        fig_z.update_xaxes(showticklabels=False, title="Countries (sorted by Z-Score)")
-        st.plotly_chart(fig_z, use_container_width=True)
-        n_out = df_out["outlier"].sum()
-        st.markdown(f"<div class='insight-box'>💡 <b>{n_out} countries</b> are statistical outliers (|z| > 2). These extreme cases — shown in red — have disproportionate influence on model training and help explain why R² is bounded in cross-country regression.</div>", unsafe_allow_html=True)
- 
-    # ══════════════════════════════════════════════════════
-    # TAB 4 — MODEL DIAGNOSTICS
-    # ══════════════════════════════════════════════════════
-    with tab4:
-        st.markdown("<div class='section-title'>🤖 Model Performance Diagnostics</div>", unsafe_allow_html=True)
-        st.markdown("<div class='section-sub'>Residual analysis, error breakdown, and prediction quality across all models</div>", unsafe_allow_html=True)
- 
-        # Train all models for diagnostics
-        (X_train_s, X_test_s, y_train, y_test,
-         X_train_df, X_test_df,
-         countries_arr, feat_names, imputer_d, scaler_d) = get_model_data()
- 
-        diag_models = {
-            "Linear Regression":  LinearRegression(),
-            "Ridge Regression":   Ridge(alpha=1.0),
-            "Random Forest":      RandomForestRegressor(n_estimators=100, random_state=42),
-            "Gradient Boosting":  GradientBoostingRegressor(n_estimators=100, random_state=42),
-        }
-        diag_preds = {}
-        diag_scores = {}
-        with st.spinner("Training models for diagnostics..."):
-            for name, m in diag_models.items():
-                m.fit(X_train_s, y_train)
-                p = m.predict(X_test_s)
-                diag_preds[name] = p
-                diag_scores[name] = {
-                    "R²":  round(r2_score(y_test, p), 3),
-                    "RMSE": round(np.sqrt(mean_squared_error(y_test, p)), 3),
-                    "MAE":  round(mean_absolute_error(y_test, p), 3),
-                }
- 
-        model_diag = st.selectbox("Select model for detailed diagnostics",
-                                  list(diag_models.keys()), key="diag_sel")
-        p_sel = diag_preds[model_diag]
-        residuals = y_test - p_sel
- 
-        # Actual vs Predicted + Residuals side by side
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown("<div class='section-title' style='font-size:1.1rem;'>🎯 Actual vs Predicted</div>", unsafe_allow_html=True)
-            fig_avp = go.Figure()
-            fig_avp.add_trace(go.Scatter(x=y_test, y=p_sel, mode="markers",
-                                         marker=dict(color=BLUE, size=8, opacity=0.7), name="Countries"))
-            fig_avp.add_trace(go.Scatter(x=[y_test.min(), y_test.max()],
-                                         y=[y_test.min(), y_test.max()],
-                                         mode="lines", line=dict(color=RED, dash="dash"), name="Perfect Fit"))
-            fig_avp.update_layout(**base_layout(340))
-            fig_avp.update_xaxes(title="Actual Unemployment (%)")
-            fig_avp.update_yaxes(title="Predicted Unemployment (%)")
-            st.plotly_chart(fig_avp, use_container_width=True)
- 
-        with col2:
-            st.markdown("<div class='section-title' style='font-size:1.1rem;'>📉 Residual Plot</div>", unsafe_allow_html=True)
-            fig_res = go.Figure()
-            fig_res.add_trace(go.Scatter(x=p_sel, y=residuals, mode="markers",
-                                         marker=dict(color=[RED if abs(r) > 5 else BLUE for r in residuals],
-                                                     size=8, opacity=0.7), name="Residuals"))
-            fig_res.add_hline(y=0, line_dash="dash", line_color="#FFB400", opacity=0.8)
-            fig_res.update_layout(**base_layout(340))
-            fig_res.update_xaxes(title="Predicted Unemployment (%)")
-            fig_res.update_yaxes(title="Residual (Actual − Predicted)")
-            st.plotly_chart(fig_res, use_container_width=True)
-        st.markdown("<div class='insight-box'>💡 Residuals should scatter randomly around 0. Any pattern (fan shape, curve) indicates the model is missing a structural feature. Red dots = errors larger than 5 percentage points.</div>", unsafe_allow_html=True)
- 
-        # Residual distribution
-        col3, col4 = st.columns(2)
-        with col3:
-            st.markdown("<div class='section-title' style='font-size:1.1rem;'>🔔 Residual Distribution</div>", unsafe_allow_html=True)
-            fig_rh = px.histogram(x=residuals, nbins=20, color_discrete_sequence=[BLUE],
-                                  labels={"x": "Residual"})
-            fig_rh.add_vline(x=0, line_dash="dash", line_color=RED, opacity=0.8)
-            fig_rh.update_layout(**base_layout(280))
-            st.plotly_chart(fig_rh, use_container_width=True)
- 
-        with col4:
-            st.markdown("<div class='section-title' style='font-size:1.1rem;'>📊 Absolute Error by Country</div>", unsafe_allow_html=True)
-            abs_err = np.abs(residuals)
-            top_err_idx = np.argsort(abs_err)[-10:][::-1]
-            # use index-based country lookup from test split
-            _, _, _, _, _, _, countries_full, _, _, _ = get_model_data()
-            # fallback to index labels if country mapping unavailable
-            try:
-                err_labels = [str(i) for i in top_err_idx]
-            except Exception:
-                err_labels = [str(i) for i in top_err_idx]
-            fig_err = px.bar(x=abs_err[top_err_idx], y=err_labels,
-                             orientation="h", color=abs_err[top_err_idx],
-                             color_continuous_scale=[BLUE, "#FFB400", RED],
-                             labels={"x": "Absolute Error (pp)", "y": "Test Sample Index"})
-            fig_err.update_layout(**base_layout(280))
-            st.plotly_chart(fig_err, use_container_width=True)
- 
-        # Model comparison radar
-        st.markdown("<div class='section-title' style='margin-top:20px;'>🕸️ Model Comparison — Radar Chart</div>", unsafe_allow_html=True)
-        radar_models = list(diag_scores.keys())
-        r2_vals   = [max(0, diag_scores[m]["R²"])  for m in radar_models]
-        rmse_vals = [diag_scores[m]["RMSE"] for m in radar_models]
-        mae_vals  = [diag_scores[m]["MAE"]  for m in radar_models]
- 
-        # Normalise to 0-1 (higher=better for R², lower=better for RMSE/MAE)
-        def norm(vals, invert=False):
-            mn, mx = min(vals), max(vals)
-            if mx == mn: return [0.5]*len(vals)
-            normed = [(v - mn)/(mx - mn) for v in vals]
-            return [1-n for n in normed] if invert else normed
- 
-        categories = ["R² Score", "Low RMSE", "Low MAE"]
-        radar_fig = go.Figure()
-        palette = [BLUE, GREEN, "#FFB400", PINK]
-        for i, m in enumerate(radar_models):
-            vals_n = [norm(r2_vals)[i], norm(rmse_vals, invert=True)[i], norm(mae_vals, invert=True)[i]]
-            vals_n += [vals_n[0]]  # close the polygon
-            radar_fig.add_trace(go.Scatterpolar(
-                r=vals_n, theta=categories + [categories[0]],
-                fill="toself", name=m,
-                line=dict(color=palette[i], width=2),
-                fillcolor=palette[i].replace("#", "rgba(") + ",0.1)" if palette[i].startswith("#") else palette[i],
-                opacity=0.8,
-            ))
-        radar_fig.update_layout(
-            polar=dict(
-                bgcolor="#13162B",
-                radialaxis=dict(visible=True, range=[0, 1], tickfont=dict(color="#666688"), gridcolor=GRID),
-                angularaxis=dict(tickfont=dict(color="#9090B0"), gridcolor=GRID),
-            ),
-            paper_bgcolor=PAPER_BG, font=FONT, height=400,
-            legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(color="#9090B0")),
-            margin=dict(t=40, b=40),
-        )
-        st.plotly_chart(radar_fig, use_container_width=True)
-        st.markdown("<div class='insight-box'>💡 The radar chart normalises all metrics so larger area = better overall performance. Gradient Boosting and Random Forest should dominate — if linear models do, your features may not have enough non-linear signal.</div>", unsafe_allow_html=True)
- 
-        # Metrics table
-        st.markdown("<div class='section-title' style='margin-top:20px;'>📋 Full Metrics Summary</div>", unsafe_allow_html=True)
-        scores_df = pd.DataFrame(diag_scores).T.reset_index().rename(columns={"index": "Model"})
-        st.dataframe(scores_df.set_index("Model").style.highlight_max(
-            subset=["R²"], color="#1A3A1A"
-        ).highlight_min(
-            subset=["RMSE", "MAE"], color="#1A3A1A"
-        ), use_container_width=True)
- 
+            df_s2 = df_viz.dropna(subset=["Unemployment_Rate", "Birth_Rate"])
+            fig2 = px.scatter(df_s2, x="Birth_Rate", y="Unemployment_Rate",
+                              hover_name="Countries and areas", trendline="ols",
+                              color="Unemployment_Rate", color_continuous_scale=["#4466FF", "#FF6B6B"],
+                              labels={"Birth_Rate": "Birth Rate", "Unemployment_Rate": "Unemployment (%)"},
+                              title="Birth Rate vs Unemployment")
+            fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(13,15,26,0.8)",
+                               font=dict(color="#9090B0"), height=340,
+                               xaxis=dict(gridcolor="#1E2140"), yaxis=dict(gridcolor="#1E2140"),
+                               title_font=dict(color="#C0C0D8"))
+            st.plotly_chart(fig2, use_container_width=True)
+            st.markdown("<div class='insight-box'>💡 High birth rates correlate with higher unemployment.</div>", unsafe_allow_html=True)
+
+    st.markdown("<div class='section-title' style='margin-top:16px;'>🧮 Correlation Heatmap</div>", unsafe_allow_html=True)
+    corr_candidates = [
+        "Unemployment_Rate", "Birth_Rate",
+        "Gross_Primary_Education_Enrollment", "Gross_Tertiary_Education_Enrollment",
+        "OOSR_Primary_Age_Male", "OOSR_Primary_Age_Female",
+        "OOSR_Upper_Secondary_Age_Male", "OOSR_Upper_Secondary_Age_Female",
+        "Completion_Rate_Primary_Male", "Completion_Rate_Upper_Secondary_Female",
+    ]
+    corr_cols = [c for c in corr_candidates if c in df_viz.columns]
+    corr_df = df_viz[corr_cols].replace(0, np.nan).dropna()
+    if len(corr_df) > 5:
+        fig_corr, ax = plt.subplots(figsize=(10, 7))
+        fig_corr.patch.set_facecolor("#0D0F1A")
+        ax.set_facecolor("#13162B")
+        sns.heatmap(corr_df.corr(), annot=True, fmt=".2f", cmap="RdYlBu_r", ax=ax,
+                    linewidths=0.5, linecolor="#1E2140",
+                    annot_kws={"size": 8, "color": "white"}, cbar_kws={"shrink": 0.8})
+        ax.tick_params(colors="#8888AA", labelsize=8)
+        plt.xticks(rotation=45, ha="right")
+        st.pyplot(fig_corr, use_container_width=True)
+        plt.close()
+
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        st.markdown("<div class='section-title' style='font-size:1.1rem;'>📈 Unemployment Distribution</div>", unsafe_allow_html=True)
+        fig_hist = px.histogram(df_viz.dropna(subset=["Unemployment_Rate"]),
+                                x="Unemployment_Rate", nbins=30, color_discrete_sequence=["#7C9EFF"])
+        fig_hist.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(13,15,26,0.8)",
+                                font=dict(color="#9090B0"), height=280,
+                                xaxis=dict(gridcolor="#1E2140"), yaxis=dict(gridcolor="#1E2140"),
+                                margin=dict(t=10))
+        st.plotly_chart(fig_hist, use_container_width=True)
+    with col_d2:
+        st.markdown("<div class='section-title' style='font-size:1.1rem;'>🏆 Top 10 Highest Unemployment</div>", unsafe_allow_html=True)
+        top10 = df_viz.dropna(subset=["Unemployment_Rate"]).nlargest(10, "Unemployment_Rate")
+        fig_top = px.bar(top10, x="Unemployment_Rate", y="Countries and areas",
+                         orientation="h", color="Unemployment_Rate",
+                         color_continuous_scale=["#7C9EFF", "#FF6B6B"])
+        fig_top.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(13,15,26,0.8)",
+                               font=dict(color="#9090B0"), height=280,
+                               xaxis=dict(gridcolor="#1E2140"), yaxis=dict(gridcolor="#1E2140"),
+                               margin=dict(t=10))
+        st.plotly_chart(fig_top, use_container_width=True)
+
 
 # ═══════════════════════════════════════════════════════════
 # PAGE 3: PREDICTION MODELS
