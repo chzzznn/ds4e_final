@@ -86,7 +86,7 @@ def render():
     shap.waterfall_plot(
         shap.Explanation(
             values=shap_values[sample_idx],
-            base_values=explainer.expected_value if hasattr(explainer, "expected_value") else 0,
+            base_values=float(explainer.expected_value[0]) if hasattr(explainer, "expected_value") and hasattr(explainer.expected_value, "__len__") else float(explainer.expected_value) if hasattr(explainer, "expected_value") else 0.0,
             data=data_row,
             feature_names=features,
         ),
