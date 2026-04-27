@@ -4,6 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import seaborn as sns
+import statsmodels.api as sm
 
 from data_loader import load_data
 
