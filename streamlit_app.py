@@ -430,7 +430,37 @@ elif "Visualization" in page:
     </div>
     """, unsafe_allow_html=True)
 
+        # ─────────────────────────────────────────────
+    # EXTRA VISUALIZATION 2: Boxplot of unemployment distribution
+    # ─────────────────────────────────────────────
+    st.markdown("<div class='section-title' style='margin-top:24px;'>📦 Unemployment Rate Spread & Outliers</div>", unsafe_allow_html=True)
 
+    fig_box = px.box(
+        df_viz.dropna(subset=["Unemployment_Rate"]),
+        y="Unemployment_Rate",
+        points="all",
+        hover_name="Countries and areas",
+        title="Distribution of Unemployment Rates Across Countries",
+        labels={"Unemployment_Rate": "Unemployment Rate (%)"}
+    )
+
+    fig_box.update_layout(
+        height=380,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(13,15,26,0.8)",
+        font=dict(color="#9090B0"),
+        yaxis=dict(gridcolor="#1E2140"),
+        margin=dict(t=40)
+    )
+
+    st.plotly_chart(fig_box, use_container_width=True)
+
+    st.markdown("""
+    <div class='insight-box'>
+    💡 The boxplot shows the overall spread of unemployment rates and highlights outlier countries.
+    This is useful because unemployment is not evenly distributed globally.
+    </div>
+    """, unsafe_allow_html=True)
 # ═══════════════════════════════════════════════════════════
 # PAGE 3: PREDICTION MODELS
 # ═══════════════════════════════════════════════════════════
