@@ -771,7 +771,7 @@ elif "Hyperparameter" in page:
         results_df = pd.DataFrame(all_results).sort_values("R²", ascending=False)
         best = results_df.iloc[0]
 
-                # ─────────────────────────────────────────────
+        # ─────────────────────────────────────────────
         # TUNING IMPROVEMENT VISUALIZATION
         # ─────────────────────────────────────────────
 
