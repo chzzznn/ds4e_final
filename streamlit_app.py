@@ -767,8 +767,64 @@ elif "Hyperparameter" in page:
         status_text.empty()
         progress.empty()
 
+
         results_df = pd.DataFrame(all_results).sort_values("R²", ascending=False)
         best = results_df.iloc[0]
+
+                # ─────────────────────────────────────────────
+        # TUNING IMPROVEMENT VISUALIZATION
+        # ─────────────────────────────────────────────
+
+        baseline_model = RandomForestRegressor(n_estimators=100, random_state=42)
+        baseline_model.fit(X_train_s, y_train)
+        baseline_preds = baseline_model.predict(X_test_s)
+
+        baseline_r2 = r2_score(y_test, baseline_preds)
+        baseline_rmse = np.sqrt(mean_squared_error(y_test, baseline_preds))
+        baseline_mae = mean_absolute_error(y_test, baseline_preds)
+
+        improvement_df = pd.DataFrame({
+            "Metric": ["R² Score", "RMSE", "MAE"],
+            "Before Tuning": [
+                baseline_r2,
+                baseline_rmse,
+                baseline_mae
+            ],
+            "After Tuning": [
+                best["R²"],
+                best["RMSE"],
+                best["MAE"]
+            ]
+        })
+
+        improvement_long = improvement_df.melt(
+            id_vars="Metric",
+            var_name="Stage",
+            value_name="Value"
+        )
+
+        fig_improvement = px.bar(
+            improvement_long,
+            x="Metric",
+            y="Value",
+            color="Stage",
+            barmode="group",
+            title="Model Performance Before vs After Hyperparameter Tuning",
+            labels={"Value": "Score / Error"}
+        )
+
+        fig_improvement.update_layout(
+            height=380,
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(13,15,26,0.8)",
+            font=dict(color="#9090B0"),
+            xaxis=dict(gridcolor="#1E2140"),
+            yaxis=dict(gridcolor="#1E2140"),
+            legend=dict(bgcolor="rgba(0,0,0,0)")
+        )
+
+        st.markdown("<div class='section-title' style='margin-top:16px;'>📈 Before vs After Tuning Improvement</div>", unsafe_allow_html=True)
+        st.plotly_chart(fig_improvement, use_container_width=True)
 
         st.markdown(f"""
         <div style='background:linear-gradient(135deg,#0D1A10,#0D1D0D); border:2px solid #64C8A0;
