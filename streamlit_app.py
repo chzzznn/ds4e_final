@@ -391,6 +391,44 @@ elif "Visualization" in page:
                                margin=dict(t=10))
         st.plotly_chart(fig_top, use_container_width=True)
         
+        # ─────────────────────────────────────────────
+    # EXTRA VISUALIZATION 1: Top/Bottom unemployment comparison
+    # ─────────────────────────────────────────────
+    st.markdown("<div class='section-title' style='margin-top:24px;'>⚖️ Highest vs Lowest Unemployment Countries</div>", unsafe_allow_html=True)
+
+    unemp_clean = df_viz.dropna(subset=["Unemployment_Rate"]).copy()
+    highest = unemp_clean.nlargest(10, "Unemployment_Rate")
+    lowest = unemp_clean.nsmallest(10, "Unemployment_Rate")
+    compare_unemp = pd.concat([highest.assign(Group="Highest"), lowest.assign(Group="Lowest")])
+
+    fig_high_low = px.bar(
+        compare_unemp,
+        x="Unemployment_Rate",
+        y="Countries and areas",
+        color="Group",
+        orientation="h",
+        title="Top 10 Highest vs Top 10 Lowest Unemployment Rates",
+        labels={"Unemployment_Rate": "Unemployment Rate (%)", "Countries and areas": "Country"}
+    )
+
+    fig_high_low.update_layout(
+        height=500,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(13,15,26,0.8)",
+        font=dict(color="#9090B0"),
+        xaxis=dict(gridcolor="#1E2140"),
+        yaxis=dict(gridcolor="#1E2140"),
+        legend=dict(bgcolor="rgba(0,0,0,0)")
+    )
+
+    st.plotly_chart(fig_high_low, use_container_width=True)
+
+    st.markdown("""
+    <div class='insight-box'>
+    💡 This plot helps us compare extreme cases. Countries at the top may face deeper labor-market challenges,
+    while countries at the bottom may have stronger employment systems or different economic structures.
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ═══════════════════════════════════════════════════════════
