@@ -435,7 +435,7 @@ elif "Prediction" in page:
     </div>""", unsafe_allow_html=True)
 
     if not selected_models:
-        st.warning("Please select at least one model.")
+        st.warning("Please select at leastt one model.")
         st.stop()
 
     results = {}
