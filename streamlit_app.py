@@ -391,6 +391,189 @@ elif "Visualization" in page:
                                margin=dict(t=10))
         st.plotly_chart(fig_top, use_container_width=True)
 
+        # ══════════════════════════════════════════════════════
+    # TAB 2 — FEATURE RELATIONSHIPS
+    # ══════════════════════════════════════════════════════
+    with tab2:
+ 
+        # Scatter: Tertiary + Birth Rate
+        st.markdown("<div class='section-title'>🔗 Education Indicators vs. Unemployment</div>", unsafe_allow_html=True)
+        col1, col2 = st.columns(2)
+        with col1:
+            if "Gross_Tertiary_Education_Enrollment" in df_viz.columns:
+                df_s = df_viz.dropna(subset=["Unemployment_Rate", "Gross_Tertiary_Education_Enrollment"])
+                fig = px.scatter(df_s, x="Gross_Tertiary_Education_Enrollment", y="Unemployment_Rate",
+                                 hover_name="Countries and areas", trendline="ols",
+                                 color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
+                                 labels={"Gross_Tertiary_Education_Enrollment": "Tertiary Enrollment (%)", "Unemployment_Rate": "Unemployment (%)"},
+                                 title="Tertiary Enrollment vs Unemployment")
+                fig.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
+                st.plotly_chart(fig, use_container_width=True)
+                st.markdown("<div class='insight-box'>💡 Negative trend — more university access means fewer unemployed.</div>", unsafe_allow_html=True)
+        with col2:
+            if "Birth_Rate" in df_viz.columns:
+                df_s2 = df_viz.dropna(subset=["Unemployment_Rate", "Birth_Rate"])
+                fig2 = px.scatter(df_s2, x="Birth_Rate", y="Unemployment_Rate",
+                                  hover_name="Countries and areas", trendline="ols",
+                                  color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
+                                  labels={"Birth_Rate": "Birth Rate", "Unemployment_Rate": "Unemployment (%)"},
+                                  title="Birth Rate vs Unemployment")
+                fig2.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
+                st.plotly_chart(fig2, use_container_width=True)
+                st.markdown("<div class='insight-box'>💡 Positive trend — high birth rates proxy lower development & weaker education investment.</div>", unsafe_allow_html=True)
+ 
+        # Scatter: Primary enrollment + OOSR upper secondary
+        col3, col4 = st.columns(2)
+        with col3:
+            if "Gross_Primary_Education_Enrollment" in df_viz.columns:
+                df_s3 = df_viz.dropna(subset=["Unemployment_Rate", "Gross_Primary_Education_Enrollment"])
+                fig3 = px.scatter(df_s3, x="Gross_Primary_Education_Enrollment", y="Unemployment_Rate",
+                                  hover_name="Countries and areas", trendline="ols",
+                                  color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
+                                  labels={"Gross_Primary_Education_Enrollment": "Primary Enrollment (%)", "Unemployment_Rate": "Unemployment (%)"},
+                                  title="Primary Enrollment vs Unemployment")
+                fig3.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
+                st.plotly_chart(fig3, use_container_width=True)
+                st.markdown("<div class='insight-box'>💡 Weak signal at primary level — nearly every country has high primary enrollment, so it doesn't differentiate unemployment outcomes.</div>", unsafe_allow_html=True)
+        with col4:
+            oosr_col = next((c for c in ["OOSR_Upper_Secondary_Age_Male", "OOSR_Upper_Secondary_Age_Female"] if c in df_viz.columns), None)
+            if oosr_col:
+                df_s4 = df_viz.dropna(subset=["Unemployment_Rate", oosr_col])
+                fig4 = px.scatter(df_s4, x=oosr_col, y="Unemployment_Rate",
+                                  hover_name="Countries and areas", trendline="ols",
+                                  color="Unemployment_Rate", color_continuous_scale=[BLUE, RED],
+                                  labels={oosr_col: "Out-of-School Rate Upper Secondary (%)", "Unemployment_Rate": "Unemployment (%)"},
+                                  title="OOSR Upper Secondary vs Unemployment")
+                fig4.update_layout(**base_layout(), title_font=dict(color="#C0C0D8"))
+                st.plotly_chart(fig4, use_container_width=True)
+                st.markdown("<div class='insight-box'>💡 Strong positive signal — countries where more teens drop out of secondary school show systematically higher unemployment.</div>", unsafe_allow_html=True)
+ 
+        # Correlation heatmap
+        st.markdown("<div class='section-title' style='margin-top:20px;'>🧮 Correlation Heatmap</div>", unsafe_allow_html=True)
+        corr_candidates = [
+            "Unemployment_Rate", "Birth_Rate",
+            "Gross_Primary_Education_Enrollment", "Gross_Tertiary_Education_Enrollment",
+            "OOSR_Primary_Age_Male", "OOSR_Primary_Age_Female",
+            "OOSR_Upper_Secondary_Age_Male", "OOSR_Upper_Secondary_Age_Female",
+            "Completion_Rate_Primary_Male", "Completion_Rate_Upper_Secondary_Female",
+        ]
+        corr_cols = [c for c in corr_candidates if c in df_viz.columns]
+        corr_df = df_viz[corr_cols].dropna()
+        if len(corr_df) > 5:
+            fig_corr, ax = plt.subplots(figsize=(10, 7))
+            fig_corr.patch.set_facecolor("#0D0F1A")
+            ax.set_facecolor("#13162B")
+            sns.heatmap(corr_df.corr(), annot=True, fmt=".2f", cmap="RdYlBu_r", ax=ax,
+                        linewidths=0.5, linecolor="#1E2140",
+                        annot_kws={"size": 8, "color": "white"}, cbar_kws={"shrink": 0.8})
+            ax.tick_params(colors="#8888AA", labelsize=8)
+            plt.xticks(rotation=45, ha="right")
+            st.pyplot(fig_corr, use_container_width=True)
+            plt.close()
+ 
+        # Parallel coordinates
+        st.markdown("<div class='section-title' style='margin-top:20px;'>🔀 Parallel Coordinates — Multi-Feature View</div>", unsafe_allow_html=True)
+        pc_cols = [c for c in ["Unemployment_Rate", "Birth_Rate",
+                                "Gross_Tertiary_Education_Enrollment",
+                                "OOSR_Upper_Secondary_Age_Male",
+                                "OOSR_Upper_Secondary_Age_Female"] if c in df_viz.columns]
+        df_pc = df_viz[pc_cols + ["Countries and areas"]].dropna()
+        if len(df_pc) > 10:
+            fig_pc = px.parallel_coordinates(
+                df_pc, color="Unemployment_Rate",
+                color_continuous_scale=["#1A1D35", BLUE, "#FFD700", RED],
+                labels={c: c.replace("_", " ").replace("OOSR ", "OOSR\n") for c in pc_cols},
+            )
+            fig_pc.update_layout(paper_bgcolor=PAPER_BG, plot_bgcolor=PAPER_BG,
+                                 font=FONT, height=380, margin=dict(t=30, b=30, l=80, r=80))
+            st.plotly_chart(fig_pc, use_container_width=True)
+            st.markdown("<div class='insight-box'>💡 Each line is a country. Lines that cross from high OOSR to high unemployment confirm the relationship — drag the axes to filter interactively.</div>", unsafe_allow_html=True)
+ 
+    # ══════════════════════════════════════════════════════
+    # TAB 3 — DEEP DIVES
+    # ══════════════════════════════════════════════════════
+    with tab3:
+ 
+        # Gender gap
+        st.markdown("<div class='section-title'>⚖️ Gender Gap in Education Completion</div>", unsafe_allow_html=True)
+        gc_m = "Completion_Rate_Upper_Secondary_Male"
+        gc_f = "Completion_Rate_Upper_Secondary_Female"
+        if gc_m in df_viz.columns and gc_f in df_viz.columns:
+            df_gap = df_viz.dropna(subset=[gc_m, gc_f]).copy()
+            df_gap["gap"] = df_gap[gc_m] - df_gap[gc_f]
+            top_gap = df_gap.nlargest(20, "gap")
+            fig_gap = go.Figure()
+            fig_gap.add_trace(go.Bar(name="Male", x=top_gap["Countries and areas"],
+                                     y=top_gap[gc_m], marker_color=BLUE))
+            fig_gap.add_trace(go.Bar(name="Female", x=top_gap["Countries and areas"],
+                                     y=top_gap[gc_f], marker_color=PINK))
+            fig_gap.update_layout(**base_layout(380), barmode="group",
+                                  margin=dict(b=120, t=10, l=0, r=0))
+            fig_gap.update_xaxes(tickangle=-45)
+            fig_gap.update_yaxes(title="Upper Secondary Completion (%)")
+            st.plotly_chart(fig_gap, use_container_width=True)
+            st.markdown("<div class='insight-box'>💡 In Chad, Niger, and Mali, male completion rates are <b>10–20 percentage points higher</b> than female — a gender equity gap that compounds into higher unemployment for women.</div>", unsafe_allow_html=True)
+ 
+        # Violin: unemployment by birth rate quartile
+        st.markdown("<div class='section-title' style='margin-top:20px;'>🎻 Unemployment by Birth Rate Group</div>", unsafe_allow_html=True)
+        if "Birth_Rate" in df_viz.columns:
+            df_vio = df_viz.dropna(subset=["Unemployment_Rate", "Birth_Rate"]).copy()
+            df_vio["Birth Rate Group"] = pd.qcut(
+                df_vio["Birth_Rate"], q=4,
+                labels=["Low\n(≤Q1)", "Mid-Low\n(Q1–Q2)", "Mid-High\n(Q2–Q3)", "High\n(>Q3)"]
+            )
+            fig_vio = px.violin(df_vio, x="Birth Rate Group", y="Unemployment_Rate",
+                                color="Birth Rate Group", box=True, points="all",
+                                color_discrete_sequence=[GREEN, BLUE, "#FFB400", RED],
+                                labels={"Unemployment_Rate": "Unemployment (%)"})
+            fig_vio.update_layout(**base_layout(380))
+            fig_vio.update_traces(meanline_visible=True)
+            st.plotly_chart(fig_vio, use_container_width=True)
+            st.markdown("<div class='insight-box'>💡 Countries in the highest birth rate quartile have a median unemployment nearly <b>3× higher</b> than low-birth-rate countries — and far more spread, showing other compounding factors at play.</div>", unsafe_allow_html=True)
+ 
+        # Scatter matrix
+        st.markdown("<div class='section-title' style='margin-top:20px;'>🔲 Scatter Matrix — Key Features</div>", unsafe_allow_html=True)
+        sm_candidates = ["Unemployment_Rate", "Birth_Rate",
+                         "Gross_Tertiary_Education_Enrollment",
+                         "OOSR_Upper_Secondary_Age_Male", "OOSR_Primary_Age_Female"]
+        sm_cols = [c for c in sm_candidates if c in df_viz.columns]
+        df_sm = df_viz[sm_cols].dropna()
+        if len(df_sm) > 10 and len(sm_cols) >= 3:
+            fig_sm = px.scatter_matrix(
+                df_sm, dimensions=sm_cols,
+                color=df_sm["Unemployment_Rate"],
+                color_continuous_scale=["#1A1D35", BLUE, "#FFD700", RED],
+                labels={c: c.replace("_", " ")[:22] for c in sm_cols},
+            )
+            fig_sm.update_traces(diagonal_visible=False, marker=dict(size=3, opacity=0.6))
+            fig_sm.update_layout(paper_bgcolor=PAPER_BG, plot_bgcolor=PLOT_BG,
+                                 font=FONT, height=520,
+                                 margin=dict(t=20, b=20, l=20, r=20))
+            st.plotly_chart(fig_sm, use_container_width=True)
+            st.markdown("<div class='insight-box'>💡 Each cell shows the relationship between two features. Strong diagonal patterns (upper-left to lower-right) indicate useful predictors. Look for the birth rate and OOSR columns — they show the clearest relationship with unemployment (color intensity).</div>", unsafe_allow_html=True)
+ 
+        # Outlier analysis — Z-score
+        st.markdown("<div class='section-title' style='margin-top:20px;'>🚨 Outlier Analysis — Unemployment Z-Scores</div>", unsafe_allow_html=True)
+        df_out = df_viz.dropna(subset=["Unemployment_Rate"]).copy()
+        df_out["z_score"] = ((df_out["Unemployment_Rate"] - df_out["Unemployment_Rate"].mean())
+                             / df_out["Unemployment_Rate"].std())
+        df_out["outlier"] = df_out["z_score"].abs() > 2
+        fig_z = px.scatter(
+            df_out.sort_values("z_score"),
+            x="Countries and areas", y="z_score",
+            color="outlier",
+            color_discrete_map={True: RED, False: BLUE},
+            hover_data={"Unemployment_Rate": True, "z_score": ":.2f"},
+            labels={"z_score": "Z-Score", "outlier": "Outlier (|z|>2)"},
+        )
+        fig_z.add_hline(y=2,  line_dash="dash", line_color="#FFB400", opacity=0.6)
+        fig_z.add_hline(y=-2, line_dash="dash", line_color="#FFB400", opacity=0.6)
+        fig_z.update_layout(**base_layout(380))
+        fig_z.update_xaxes(showticklabels=False, title="Countries (sorted by Z-Score)")
+        st.plotly_chart(fig_z, use_container_width=True)
+        n_out = df_out["outlier"].sum()
+        st.markdown(f"<div class='insight-box'>💡 <b>{n_out} countries</b> are statistical outliers (|z| > 2). These extreme cases — shown in red — have disproportionate influence on model training and help explain why R² is bounded in cross-country regression.</div>", unsafe_allow_html=True)
+
 
 # ═══════════════════════════════════════════════════════════
 # PAGE 3: PREDICTION MODELS
