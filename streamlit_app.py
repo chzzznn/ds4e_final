@@ -731,11 +731,18 @@ elif "Explainability" in page:
     sample_idx = st.slider("Select test sample index", 0, len(X_test_s) - 1, 0)
     fig_wf, ax_wf = plt.subplots(figsize=(10, 4))
     fig_wf.patch.set_facecolor("#0D0F1A")
+
+    # ── FIX: TreeExplainer.expected_value can be an array; always coerce to scalar ──
+    raw_ev = explainer.expected_value if hasattr(explainer, "expected_value") else 0.0
+    base_val = float(raw_ev[0]) if hasattr(raw_ev, "__len__") else float(raw_ev)
+
     shap.waterfall_plot(
-        shap.Explanation(values=shap_values[sample_idx],
-                         base_values=explainer.expected_value if hasattr(explainer, "expected_value") else 0,
-                         data=X_test_df.iloc[sample_idx] if model_choice != "Linear Regression" else pd.Series(X_test_s[sample_idx], index=features),
-                         feature_names=features),
+        shap.Explanation(
+            values=shap_values[sample_idx],
+            base_values=base_val,
+            data=X_test_df.iloc[sample_idx] if model_choice != "Linear Regression" else pd.Series(X_test_s[sample_idx], index=features),
+            feature_names=features,
+        ),
         show=False
     )
     plt.gcf().patch.set_facecolor("#0D0F1A")
