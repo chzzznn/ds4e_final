@@ -390,7 +390,6 @@ elif "Visualization" in page:
                                xaxis=dict(gridcolor="#1E2140"), yaxis=dict(gridcolor="#1E2140"),
                                margin=dict(t=10))
         st.plotly_chart(fig_top, use_container_width=True)
-
         
 
 
